@@ -1,0 +1,88 @@
+*&---------------------------------------------------------------------*
+*& Include ZMINITMSTOP                              - Module Pool      ZMINITMS
+*&---------------------------------------------------------------------*
+PROGRAM zminitms.
+
+TABLES: zorders,
+        zplace,
+        zcus,
+        ztrailer,
+        ztractor,
+        zdriver.
+
+DATA: ok_code                TYPE sy-ucomm,
+      g_custom_cont          TYPE REF TO cl_gui_custom_container,
+      g_container            TYPE scrfname VALUE 'ALV_CONT',
+      lo_alv                 TYPE REF TO cl_gui_alv_grid,
+      lt_zorders             TYPE TABLE OF zorders,
+      ls_layout              TYPE lvc_s_layo,
+      gs_new_order           TYPE zorders,
+      lv_new_id              TYPE zorders-order_number,
+      lv_required            TYPE abap_bool,
+      gv_force_back          TYPE abap_bool VALUE abap_false,
+      order_new              TYPE abap_bool,
+      gs_zorder              TYPE zorders,
+      gs_update_order        TYPE zorders,
+      lt_sort                TYPE lvc_t_sort,
+      ls_sort                TYPE lvc_s_sort,
+      lt_row                 TYPE lvc_t_row,
+      lt_row_place           TYPE lvc_t_row,
+
+      ls_row                 TYPE lvc_s_row,
+      ls_row_place           TYPE lvc_s_row,
+
+      lv_index               TYPE sy-tabix,
+      lv_ok_code             TYPE sy-ucomm,
+
+*variables for places ALVs and in tabs on screen 0500, 0610, 0611
+      g_custom_cont_place    TYPE REF TO cl_gui_custom_container,
+      g_container_place      TYPE scrfname VALUE 'ALV_PLACE_CONT',
+      lo_alv_place           TYPE REF TO cl_gui_alv_grid,
+      lt_zplace              TYPE TABLE OF zplace,
+      gs_new_place           TYPE zplace,
+      gs_place               TYPE zplace,
+      gs_update_place        TYPE zplace,
+      gs_zplace              TYPE zplace,
+
+*variables for customers ALVs and in tabs on screen 0500, 0620, 0621
+      g_custom_cont_customer TYPE REF TO cl_gui_custom_container,
+      g_container_customer   TYPE scrfname VALUE 'ALV_CUS_CONT',
+      lo_alv_customer        TYPE REF TO cl_gui_alv_grid,
+      lt_zcus                TYPE TABLE OF zcus,
+      gs_new_cus             TYPE zcus,
+      gs_update_customer     TYPE zcus,
+      gs_customer            TYPE zcus,
+
+*variables for traailers ALVs and in tabs on screen 0500, 0630
+      g_custom_cont_trailer  TYPE REF TO cl_gui_custom_container,
+      g_container_trailer    TYPE scrfname VALUE 'ALV_TRAILERS_CONT',
+      lo_alv_trailer         TYPE REF TO cl_gui_alv_grid,
+      lt_ztrailer            TYPE TABLE OF ztrailer,
+      gs_trailer             TYPE ztrailer,
+
+*variables for tractors ALVs and in tabs on screen 0500, 0640
+      g_custom_cont_tractor  TYPE REF TO cl_gui_custom_container,
+      g_container_tractor    TYPE scrfname VALUE 'ALV_TRACTORS_CONT',
+      lo_alv_tractor         TYPE REF TO cl_gui_alv_grid,
+      lt_ztractor            TYPE TABLE OF ztractor,
+      gs_tractor             TYPE ztractor,
+
+*variables for drivers ALVs and in tabs on screen 0500, 0650, 0651
+      g_custom_cont_driver   TYPE REF TO cl_gui_custom_container,
+      g_container_driver     TYPE scrfname VALUE 'ALV_DRIVERS_CONT',
+      lo_alv_driver          TYPE REF TO cl_gui_alv_grid,
+      lt_zdriver             TYPE TABLE OF zdriver,
+      gs_driver              TYPE zdriver,
+      gs_new_driver          TYPE zdriver,
+      gs_driver_update       TYPE zdriver,
+
+*variables to send an email
+      lo_send_request        TYPE REF TO cl_bcs,
+      lo_document            TYPE REF TO cl_document_bcs,
+      lo_sender              TYPE REF TO cl_sapuser_bcs,
+      lo_recipient           TYPE REF TO if_recipient_bcs,
+      lt_text                TYPE bcsy_text,
+      lv_email               TYPE adr6-smtp_addr,
+      lv_mail_loading        TYPE string,
+      lv_mail_goods          TYPE string,
+      lv_mail_offloading     TYPE string.

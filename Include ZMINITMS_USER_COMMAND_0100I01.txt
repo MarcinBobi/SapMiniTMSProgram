@@ -1,0 +1,361 @@
+*----------------------------------------------------------------------*
+***INCLUDE ZMINITMS_USER_COMMAND_0100I01.
+*----------------------------------------------------------------------*
+
+MODULE user_command_0100 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK' OR 'CANCEL' OR 'EXIT' .
+      LEAVE PROGRAM.
+    WHEN 'LB_SHOW'.
+      CALL SCREEN '0200'.
+    WHEN 'LB_ADD'.
+      CALL SCREEN '0300'.
+    WHEN 'LB_MASTERDATA'.
+      CALL SCREEN '0500'.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0200 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0100.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'B_MODIFY'.
+      PERFORM get_selected_row.
+      IF sy-subrc = 0.
+        LEAVE TO SCREEN 0400. "SCREEN FOR MODIFY SELECTED TRANSPORT ORDER
+      ELSE.
+        MESSAGE i005(zmtms).
+      ENDIF.
+    WHEN 'B_DELETE'.
+      PERFORM get_selected_row.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_row.
+        MESSAGE i009(zmtms).
+      ELSE.
+        MESSAGE i008(zmtms).
+      ENDIF.
+    WHEN 'B_SEND'.
+      PERFORM get_selected_row.
+      IF sy-subrc = 0.
+        PERFORM send_mail_to_driver.
+        MESSAGE i010(zmtms).
+      ELSE.
+        MESSAGE i011(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0300 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0100.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_order.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0400 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0200. "screen with ALV showing all orders
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM update_order.
+      PERFORM refresh_alv_data.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0500 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0100.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0501 INPUT.
+
+  CASE ok_code.
+    WHEN 'BUT_ADD'.
+      CALL SCREEN 0610.
+    WHEN 'BUT_MODIFY'.
+      PERFORM get_selected_row_alv_place.
+      IF sy-subrc = 0.
+        CALL SCREEN 0611.
+      ELSE.
+        MESSAGE i018(zmtms).
+      ENDIF.
+    WHEN 'BUT_DELETE'.
+      PERFORM get_selected_row_alv_place.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_place.
+        MESSAGE i020(zmtms).
+      ELSE.
+        MESSAGE i019(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0610 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_place.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0611 INPUT.
+
+  CLEAR lv_ok_code.
+  lv_ok_code = ok_code.
+  CLEAR ok_code.
+
+  CASE lv_ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM modify_place.
+      PERFORM refresh_alv_place_data.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0502 INPUT.
+
+  CASE ok_code.
+    WHEN 'BUT_ADD_CUS'.
+      CALL SCREEN 0620.
+    WHEN 'BUT_MOD_CUS'.
+      PERFORM get_selected_row_alv_customer.
+      IF sy-subrc = 0.
+        CALL SCREEN 0621.
+      ELSE.
+        MESSAGE i018(zmtms).
+      ENDIF.
+    WHEN 'BUT_DEL_CUS'.
+      PERFORM get_selected_row_alv_customer.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_customer.
+        MESSAGE i020(zmtms).
+      ELSE.
+        MESSAGE i019(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0620 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_cus.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0621 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM modify_customer.
+      PERFORM refresh_alv_customer_data.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0503 INPUT.
+
+  CASE ok_code.
+    WHEN 'BUT_ADD_TRAILER'.
+      CALL SCREEN 0630.
+    WHEN 'BUT_DEL_TRAILER'.
+      PERFORM get_selected_row_alv_trailer.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_trailer.
+        MESSAGE i029(zmtms).
+      ELSE.
+        MESSAGE i019(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0630 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_trailer.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0504 INPUT.
+
+  CASE ok_code.
+    WHEN 'BUT_ADD_TRACTOR'.
+      CALL SCREEN 0640.
+    WHEN 'BUT_DEL_TRACTOR'.
+      PERFORM get_selected_row_alv_tractor.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_tractor.
+        MESSAGE i032(zmtms).
+      ELSE.
+        MESSAGE i019(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0640 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_tractor.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0505 INPUT.
+
+  CASE ok_code.
+    WHEN 'BUT_ADD_DRI'.
+      CALL SCREEN 0650.
+    WHEN 'BUT_MOD_DRI'.
+      PERFORM get_selected_row_alv_driver.
+      IF sy-subrc = 0.
+        CALL SCREEN 0651.
+      ELSE.
+        MESSAGE i018(zmtms).
+      ENDIF.
+    WHEN 'BUT_DEL_DRI'.
+      PERFORM get_selected_row_alv_driver.
+      IF sy-subrc = 0.
+        PERFORM delete_selected_driver.
+        MESSAGE i037(zmtms).
+      ELSE.
+        MESSAGE i019(zmtms).
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0650 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM save_driver.
+  ENDCASE.
+
+ENDMODULE.
+
+**********************************************************************
+
+MODULE user_command_0651 INPUT.
+
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0500.
+    WHEN  'CANCEL' OR 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN  'SAVE'.
+      PERFORM modify_driver.
+      PERFORM refresh_alv_drivers_data.
+  ENDCASE.
+
+ENDMODULE.

@@ -1,0 +1,1034 @@
+*&---------------------------------------------------------------------*
+*& Include          ZMINITMSF01
+*&---------------------------------------------------------------------*
+
+  FORM refresh_alv_data .
+
+    CLEAR lt_zorders.
+
+    SELECT * FROM zorders
+             INTO TABLE lt_zorders.
+
+*sorting descending transport orders on field ORDER_NUMBER
+    CALL METHOD lo_alv->set_sort_criteria
+      EXPORTING
+        it_sort = lt_sort.
+
+*refresh ALV
+    CALL METHOD lo_alv->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create .
+
+    SELECT * FROM zorders
+             INTO TABLE lt_zorders.
+
+    CREATE OBJECT g_custom_cont
+      EXPORTING
+        container_name = g_container.
+
+    CREATE OBJECT lo_alv
+      EXPORTING
+        i_parent = g_custom_cont.
+
+    ls_layout-cwidth_opt = 'X'.
+    ls_layout-zebra      = 'X'.
+
+* sorting descending on ORDER_NUMBER
+
+    CLEAR ls_sort.
+    ls_sort-fieldname = 'ORDER_NUMBER'.
+    ls_sort-down = 'X'.
+    ls_sort-spos = 1.
+    APPEND ls_sort TO lt_sort.
+
+*creating ALV
+
+    CALL METHOD lo_alv->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZORDERS'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_zorders
+        it_sort                       = lt_sort
+*       it_fieldcatalog               = lt_fcat
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+      MESSAGE e001(zmtms) WITH sy-subrc.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_order .
+
+    gs_new_order-order_number = zorders-order_number.
+    gs_new_order-loading_date = zorders-loading_date.
+    gs_new_order-loading_hour = zorders-loading_hour.
+    gs_new_order-loading_place_id = zorders-loading_place_id.
+    gs_new_order-goods = zorders-goods.
+    gs_new_order-weight = zorders-weight.
+    gs_new_order-details = zorders-details.
+    gs_new_order-offloading_date = zorders-offloading_date.
+    gs_new_order-offloading_hour = zorders-offloading_hour.
+    gs_new_order-offloading_place_id = zorders-offloading_place_id.
+    gs_new_order-offloading_details = zorders-offloading_details.
+    gs_new_order-customer_id = zorders-customer_id.
+    gs_new_order-customer_reference = zorders-customer_reference.
+    gs_new_order-additional_info = zorders-additional_info.
+    gs_new_order-trailer = zorders-trailer.
+    gs_new_order-vehicle_plate_number = zorders-vehicle_plate_number.
+    gs_new_order-driver = zorders-driver.
+    gs_new_order-sell_rate_pln = zorders-sell_rate_pln.
+    gs_new_order-sell_currency = zorders-sell_currency.
+    gs_new_order-distance = zorders-distance.
+
+    CALL FUNCTION 'ZFMMINITMS'
+      EXPORTING
+        it_ins = gs_new_order.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s002(zmtms).
+        CLEAR zorders.
+      WHEN OTHERS.
+        MESSAGE e003(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0100.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row .
+
+    CALL METHOD lo_alv->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    READ TABLE lt_row INTO DATA(ls_row) INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row-index.
+      READ TABLE lt_zorders INTO gs_zorder INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM update_order .
+
+    gs_new_order-order_number = gs_zorder-order_number.
+    gs_update_order-loading_date = gs_zorder-loading_date.
+    gs_update_order-loading_hour = gs_zorder-loading_hour.
+    gs_update_order-loading_place_id = gs_zorder-loading_place_id.
+    gs_update_order-goods = gs_zorder-goods.
+    gs_update_order-weight = gs_zorder-weight.
+    gs_update_order-details = gs_zorder-details.
+    gs_update_order-offloading_date = gs_zorder-offloading_date.
+    gs_update_order-offloading_hour = gs_zorder-offloading_hour.
+    gs_update_order-offloading_place_id = gs_zorder-offloading_place_id.
+    gs_update_order-offloading_details = gs_zorder-offloading_details.
+    gs_update_order-customer_id = gs_zorder-customer_id.
+    gs_update_order-customer_reference = gs_zorder-customer_reference.
+    gs_update_order-additional_info = gs_zorder-additional_info.
+    gs_update_order-trailer = gs_zorder-trailer.
+    gs_update_order-vehicle_plate_number = gs_zorder-vehicle_plate_number.
+    gs_update_order-driver = gs_zorder-driver.
+    gs_update_order-sell_rate_pln = gs_zorder-sell_rate_pln.
+    gs_update_order-sell_currency = gs_zorder-sell_currency.
+    gs_update_order-distance = gs_zorder-distance.
+
+    CALL FUNCTION 'ZFMMINITMS'
+      EXPORTING
+        it_upd = gs_zorder.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s006(zmtms).
+      WHEN OTHERS.
+        MESSAGE e007(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0200.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_row.
+
+    CLEAR:lt_row,
+          ls_row.
+
+*get selected row
+    CALL METHOD lo_alv->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE lt_zorders INTO gs_zorder INDEX ls_row-index.
+      IF sy-subrc = 0.
+        CALL FUNCTION 'ZFMMINITMS'
+          EXPORTING
+            it_del = gs_zorder.
+
+        DELETE lt_zorders INDEX ls_row-index.
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+*refreshing ALV
+    CALL METHOD lo_alv->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create_place.
+
+    SELECT * FROM zplace
+             INTO TABLE lt_zplace.
+
+    CREATE OBJECT g_custom_cont_place
+      EXPORTING
+        container_name = g_container_place.
+
+    CREATE OBJECT lo_alv_place
+      EXPORTING
+        i_parent = g_custom_cont_place.
+
+    ls_layout-cwidth_opt = 'X'.
+
+    CALL METHOD lo_alv_place->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZPLACE'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_zplace
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+
+      MESSAGE e001(zmtms) WITH sy-subrc.
+
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM send_mail_to_driver.
+
+*Get driver email address
+    SELECT SINGLE email INTO lv_email
+                        FROM zdriver
+                        WHERE driver_id = gs_zorder-driver.
+
+    IF lv_email IS INITIAL.
+      MESSAGE e012(zmtms).
+      RETURN.
+    ENDIF.
+
+*contenet of the email
+    SELECT name, street, building_number, post_code, city
+      INTO @DATA(lv_place)
+      FROM zplace
+      WHERE place_id = @gs_zorder-loading_place_id.
+    ENDSELECT.
+
+    SELECT name, street, building_number, post_code, city
+      INTO @DATA(lv_place_off)
+      FROM zplace
+      WHERE place_id = @gs_zorder-offloading_place_id.
+    ENDSELECT.
+
+    lv_mail_loading = TEXT-001.
+    lv_mail_goods = TEXT-002.
+    lv_mail_offloading = TEXT-003.
+
+    lt_text = VALUE stringtab(
+      ( |{ lv_mail_loading }: { gs_zorder-loading_date } , { gs_zorder-loading_hour }, { lv_place-name }, { lv_place-street } { lv_place-building_number }, { lv_place-post_code }, { lv_place-city }: { gs_zorder-details }| )
+      ( |{ lv_mail_goods }: { gs_zorder-goods }, { gs_zorder-weight }kg, { gs_zorder-additional_info }| )
+      ( |{ lv_mail_offloading }: { gs_zorder-offloading_date }, { gs_zorder-offloading_hour }, { lv_place_off-name }, { lv_place_off-street } { lv_place_off-building_number }, { lv_place_off-post_code }, { lv_place_off-city }: {
+gs_zorder-offloading_details }| )
+    ).
+
+    TRY.
+*send request
+        lo_send_request = cl_bcs=>create_persistent( ).
+
+*create email
+        lo_document = cl_document_bcs=>create_document(
+                        i_type    = 'RAW'
+                        i_subject = |Zlecenie nr { gs_zorder-order_number }, { gs_zorder-vehicle_plate_number }/{ gs_zorder-trailer }|
+                        i_text    = lt_text ).
+
+        lo_send_request->set_document( lo_document ).
+
+*sender
+        lo_sender = cl_sapuser_bcs=>create( sy-uname ).
+        lo_send_request->set_sender( lo_sender ).
+
+*receiver
+        lo_recipient = cl_cam_address_bcs=>create_internet_address( lv_email ).
+        lo_send_request->add_recipient( lo_recipient ).
+
+*send
+        lo_send_request->send( i_with_error_screen = 'X' ).
+
+        COMMIT WORK.
+
+      CATCH cx_bcs INTO DATA(lo_bcs_error).
+        MESSAGE e013(zmtms) WITH lo_bcs_error->get_text( ).
+
+    ENDTRY.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create_customer .
+
+    SELECT * FROM zcus
+             INTO TABLE lt_zcus.
+
+    CREATE OBJECT g_custom_cont_customer
+      EXPORTING
+        container_name = g_container_customer.
+
+    CREATE OBJECT lo_alv_customer
+      EXPORTING
+        i_parent = g_custom_cont_customer.
+
+    ls_layout-cwidth_opt = 'X'.
+
+    CALL METHOD lo_alv_customer->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZCUS'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_zcus
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+
+      MESSAGE e001(zmtms) WITH sy-subrc.
+
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create_trailers.
+
+    SELECT * FROM ztrailer
+             INTO TABLE lt_ztrailer.
+
+    CREATE OBJECT g_custom_cont_trailer
+      EXPORTING
+        container_name = g_container_trailer.
+
+    CREATE OBJECT lo_alv_trailer
+      EXPORTING
+        i_parent = g_custom_cont_trailer.
+
+    ls_layout-cwidth_opt = 'X'.
+
+    CALL METHOD lo_alv_trailer->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ZTRAILER'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_ztrailer
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+
+      MESSAGE e001(zmtms) WITH sy-subrc.
+
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create_tractors.
+
+    SELECT * FROM ztractor
+                INTO TABLE lt_ztractor.
+
+    CREATE OBJECT g_custom_cont_tractor
+      EXPORTING
+        container_name = g_container_tractor.
+
+    CREATE OBJECT lo_alv_tractor
+      EXPORTING
+        i_parent = g_custom_cont_tractor.
+
+    ls_layout-cwidth_opt = 'X'.
+
+    CALL METHOD lo_alv_tractor->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'ztractor'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_ztractor
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+
+      MESSAGE e001(zmtms) WITH sy-subrc.
+
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM alv_create_drivers.
+
+    SELECT * FROM zdriver
+             INTO TABLE lt_zdriver.
+
+    CREATE OBJECT g_custom_cont_driver
+      EXPORTING
+        container_name = g_container_driver.
+
+    CREATE OBJECT lo_alv_driver
+      EXPORTING
+        i_parent = g_custom_cont_driver.
+
+    ls_layout-cwidth_opt = 'X'.
+
+    CALL METHOD lo_alv_driver->set_table_for_first_display
+      EXPORTING
+        i_structure_name              = 'zdriver'
+        is_layout                     = ls_layout
+      CHANGING
+        it_outtab                     = lt_zdriver
+      EXCEPTIONS
+        invalid_parameter_combination = 1
+        program_error                 = 2
+        too_many_lines                = 3
+        OTHERS                        = 4.
+    IF sy-subrc <> 0.
+
+      MESSAGE e001(zmtms) WITH sy-subrc.
+
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_place.
+
+    gs_new_place-place_id = zplace-place_id.
+    gs_new_place-name = zplace-name.
+    gs_new_place-street = zplace-street.
+    gs_new_place-building_number = zplace-building_number.
+    gs_new_place-post_code = zplace-post_code.
+    gs_new_place-city = zplace-city.
+    gs_new_place-country = zplace-country.
+    gs_new_place-additional_info = zplace-additional_info.
+    gs_new_place-open_hour = zplace-open_hour.
+    gs_new_place-close_hour = zplace-close_hour.
+
+    CALL FUNCTION 'ZFMPLACE'
+      EXPORTING
+        it_ins = gs_new_place.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s014(zmtms).
+        CLEAR zplace.
+      WHEN OTHERS.
+        MESSAGE e015(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM modify_place .
+
+    gs_update_place-place_id = gs_place-place_id.
+    gs_update_place-name = gs_place-name.
+    gs_update_place-street = gs_place-street.
+    gs_update_place-building_number = gs_place-building_number.
+    gs_update_place-post_code = gs_place-post_code.
+    gs_update_place-city = gs_place-city.
+    gs_update_place-country = gs_place-country.
+    gs_update_place-additional_info = gs_place-additional_info.
+    gs_update_place-open_hour = gs_place-open_hour.
+    gs_update_place-close_hour = gs_place-close_hour.
+
+    CALL FUNCTION 'ZFMPLACE'
+      EXPORTING
+        it_upd = gs_place.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s016(zmtms).
+      WHEN OTHERS.
+        MESSAGE e017(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM refresh_alv_place_data .
+
+    SELECT * FROM zplace INTO TABLE lt_zplace.
+
+    CALL METHOD lo_alv_place->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row_alv_place .
+
+    CLEAR:lt_row_place,
+          ls_row,
+          lv_index.
+
+    CALL METHOD lo_alv_place->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row_place.
+
+    READ TABLE lt_row_place INTO DATA(ls_row_place) INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row_place-index.
+      READ TABLE lt_zplace INTO gs_place INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_place .
+
+    " checking if ALV is created
+    IF lo_alv_place IS INITIAL.
+      MESSAGE i021(zmtms).
+      RETURN.
+    ENDIF.
+
+    CLEAR: lt_row_place, ls_row_place.
+
+    " get selected row
+    CALL METHOD lo_alv_place->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row_place.
+
+    " deleting row from database
+    LOOP AT lt_row_place INTO ls_row_place.
+      READ TABLE lt_zplace INTO gs_zplace INDEX ls_row_place-index.
+      IF sy-subrc = 0.
+
+        CALL FUNCTION 'ZFMPLACE'
+          EXPORTING
+            it_del = gs_zplace.
+
+        " deleting from current ALV
+        DELETE lt_zplace INDEX ls_row_place-index.
+
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+    " refreshing current ALV
+    IF lo_alv_place IS BOUND.
+      CALL METHOD lo_alv_place->refresh_table_display.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM refresh_alv_customer_data .
+
+    SELECT * FROM zcus INTO TABLE lt_zcus.
+
+    CALL METHOD lo_alv_customer->refresh_table_display.
+
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_cus.
+
+    gs_new_cus-customer_id = zcus-customer_id.
+    gs_new_cus-vat = zcus-vat.
+    gs_new_cus-place_id = zcus-place_id.
+    gs_new_cus-contact_person = zcus-contact_person.
+    gs_new_cus-phone = zcus-phone.
+    gs_new_cus-email = zcus-email.
+    gs_new_cus-payment_term = zcus-payment_term.
+
+
+    CALL FUNCTION 'ZFMCUS'
+      EXPORTING
+        it_ins = gs_new_cus.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s022(zmtms).
+        CLEAR zcus.
+      WHEN OTHERS.
+        MESSAGE e023(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM modify_customer .
+
+    CALL FUNCTION 'ZFMCUS'
+      EXPORTING
+        it_upd = gs_update_customer.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s024(zmtms).
+      WHEN OTHERS.
+        MESSAGE e025(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row_alv_customer .
+
+    CLEAR:lt_row,
+          ls_row,
+          lv_index.
+
+    CALL METHOD lo_alv_customer->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    READ TABLE lt_row INTO ls_row INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row-index.
+      READ TABLE lt_zcus INTO gs_update_customer INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_customer .
+
+    " checking if ALV is created
+    IF lo_alv_customer IS INITIAL.
+      MESSAGE i021(zmtms).
+      RETURN.
+    ENDIF.
+
+    CLEAR: lt_row,
+           ls_row.
+
+    " get selected row
+    CALL METHOD lo_alv_customer->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    " deleting row from database
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE lt_zcus INTO gs_customer INDEX ls_row-index.
+      IF sy-subrc = 0.
+
+        CALL FUNCTION 'ZFMCUS'
+          EXPORTING
+            it_del = gs_customer.
+
+        " deleting from current ALV
+        DELETE lt_zcus INDEX ls_row-index.
+
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+    " refreshing current ALV
+    IF lo_alv_customer IS BOUND.
+      CALL METHOD lo_alv_customer->refresh_table_display.
+    ENDIF.
+  ENDFORM.
+
+**********************************************************************
+
+  FORM refresh_alv_trailers_data.
+
+    SELECT * FROM ztrailer INTO TABLE lt_ztrailer.
+
+    CALL METHOD lo_alv_trailer->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_trailer .
+
+    CALL FUNCTION 'ZFMTRAILER'
+      EXPORTING
+        it_ins = gs_trailer.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s027(zmtms).
+        CLEAR ztrailer.
+      WHEN OTHERS.
+        MESSAGE e028(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row_alv_trailer .
+
+    CLEAR:lt_row,
+          ls_row,
+          lv_index.
+
+    CALL METHOD lo_alv_trailer->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    READ TABLE lt_row INTO ls_row INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row-index.
+      READ TABLE lt_ztrailer INTO gs_trailer INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_trailer .
+
+    " checking if ALV is created
+    IF lo_alv_trailer IS INITIAL.
+      MESSAGE i021(zmtms).
+      RETURN.
+    ENDIF.
+
+    CLEAR: lt_row,
+           ls_row.
+
+    " get selected row
+    CALL METHOD lo_alv_trailer->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    " deleting row from database
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE lt_ztrailer INTO gs_trailer INDEX ls_row-index.
+      IF sy-subrc = 0.
+
+        CALL FUNCTION 'ZFMTRAILER'
+          EXPORTING
+            it_del = gs_trailer.
+
+        " deleting from current ALV
+        DELETE lt_ztrailer INDEX ls_row-index.
+
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+    " refreshing current ALV
+    IF lo_alv_trailer IS BOUND.
+      CALL METHOD lo_alv_trailer->refresh_table_display.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM refresh_alv_tractors_data.
+
+    SELECT * FROM ztractor INTO TABLE lt_ztractor.
+
+    CALL METHOD lo_alv_tractor->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_tractor .
+
+    CALL FUNCTION 'ZFMTRACTOR'
+      EXPORTING
+        it_ins = gs_tractor.
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s030(zmtms).
+        CLEAR ztractor.
+      WHEN OTHERS.
+        MESSAGE e031(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row_alv_tractor .
+
+    CLEAR:lt_row,
+          ls_row,
+          lv_index.
+
+    CALL METHOD lo_alv_tractor->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    READ TABLE lt_row INTO ls_row INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row-index.
+      READ TABLE lt_ztractor INTO gs_tractor INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_tractor .
+
+    " checking if ALV is created
+    IF lo_alv_tractor IS INITIAL.
+      MESSAGE i021(zmtms).
+      RETURN.
+    ENDIF.
+
+    CLEAR: lt_row,
+           ls_row.
+
+    " get selected row
+    CALL METHOD lo_alv_tractor->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    " deleting row from database
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE lt_ztractor INTO gs_tractor INDEX ls_row-index.
+      IF sy-subrc = 0.
+
+        CALL FUNCTION 'ZFMTRACTOR'
+          EXPORTING
+            it_del = gs_tractor.
+
+        " deleting from current ALV
+        DELETE lt_ztractor INDEX ls_row-index.
+
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+    " refreshing current ALV
+    IF lo_alv_tractor IS BOUND.
+      CALL METHOD lo_alv_tractor->refresh_table_display.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM refresh_alv_drivers_data .
+
+    SELECT * FROM zdriver INTO TABLE lt_zdriver.
+
+    CALL METHOD lo_alv_driver->refresh_table_display.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM save_driver .
+
+    gs_new_driver-driver_id = zdriver-driver_id.
+    gs_new_driver-driver = zdriver-driver.
+    gs_new_driver-phone = zdriver-phone.
+    gs_new_driver-id_card = zdriver-id_card.
+    gs_new_driver-email = zdriver-email.
+
+    CALL FUNCTION 'ZFMDRIVER'
+      EXPORTING
+        it_ins = gs_new_driver.
+
+    CLEAR gs_new_driver.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s033(zmtms).
+        CLEAR zdriver.
+      WHEN OTHERS.
+        MESSAGE e034(zmtms).
+    ENDCASE.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM get_selected_row_alv_driver .
+
+    CLEAR:lt_row,
+          ls_row,
+          lv_index.
+
+    CALL METHOD lo_alv_driver->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    READ TABLE lt_row INTO ls_row INDEX 1.
+    IF sy-subrc = 0.
+      lv_index = ls_row-index.
+      READ TABLE lt_zdriver INTO gs_driver INDEX lv_index.
+      IF sy-subrc = 0.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM modify_driver .
+
+    gs_driver_update-driver_id = gs_driver-driver_id.
+    gs_driver_update-driver = gs_driver-driver.
+    gs_driver_update-phone = gs_driver-phone.
+    gs_driver_update-id_card = gs_driver-id_card.
+    gs_driver_update-email = gs_driver-email.
+
+    CALL FUNCTION 'ZFMDRIVER'
+      EXPORTING
+        it_upd = gs_driver_update.
+
+    CASE sy-subrc.
+      WHEN 0.
+        COMMIT WORK.
+        MESSAGE s035(zmtms).
+      WHEN OTHERS.
+        MESSAGE e036(zmtms).
+    ENDCASE.
+
+    CLEAR gs_driver.
+
+    CALL SCREEN 0500.
+
+  ENDFORM.
+
+**********************************************************************
+
+  FORM delete_selected_driver .
+
+    " checking if ALV is created
+    IF lo_alv_driver IS INITIAL.
+      MESSAGE i021(zmtms).
+      RETURN.
+    ENDIF.
+
+    CLEAR: lt_row,
+           ls_row.
+
+    " get selected row
+    CALL METHOD lo_alv_driver->get_selected_rows
+      IMPORTING
+        et_index_rows = lt_row.
+
+    " deleting row from database
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE lt_zdriver INTO gs_driver INDEX ls_row-index.
+      IF sy-subrc = 0.
+
+        CALL FUNCTION 'ZFMDRIVER'
+          EXPORTING
+            it_del = gs_driver.
+
+        " deleting from current ALV
+        DELETE lt_zdriver INDEX ls_row-index.
+
+      ENDIF.
+    ENDLOOP.
+
+    COMMIT WORK.
+
+    " refreshing current ALV
+    IF lo_alv_driver IS BOUND.
+      CALL METHOD lo_alv_driver->refresh_table_display.
+    ENDIF.
+
+  ENDFORM.

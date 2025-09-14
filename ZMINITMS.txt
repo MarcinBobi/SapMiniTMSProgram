@@ -1,0 +1,15 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      ZMINITMS
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE zminitmstop.                       " Global Data
+
+INCLUDE zminitmsf01.                       " FORM-Routines
+
+INCLUDE zminitms_tabs.                     " Tabs for screen 0500
+
+INCLUDE zminitms_status_0100o01.           " PBO-Modules
+
+INCLUDE zminitms_user_command_0100i01.     " PAI-Modules

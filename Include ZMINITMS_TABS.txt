@@ -1,0 +1,64 @@
+*&---------------------------------------------------------------------*
+*& Include          ZMINITMS_TABS
+*&---------------------------------------------------------------------*
+
+
+*&SPWIZARD: FUNCTION CODES FOR TABSTRIP 'TAB1'
+CONSTANTS: BEGIN OF c_tab1,
+             tab1 LIKE sy-ucomm VALUE 'TAB1_FC1',
+             tab2 LIKE sy-ucomm VALUE 'TAB1_FC2',
+             tab3 LIKE sy-ucomm VALUE 'TAB1_FC3',
+             tab4 LIKE sy-ucomm VALUE 'TAB1_FC4',
+             tab5 LIKE sy-ucomm VALUE 'TAB1_FC5',
+           END OF c_tab1.
+*&SPWIZARD: DATA FOR TABSTRIP 'TAB1'
+CONTROLS:  tab1 TYPE TABSTRIP.
+DATA: BEGIN OF g_tab1,
+        subscreen   LIKE sy-dynnr,
+        prog        LIKE sy-repid VALUE 'ZMINITMS',
+        pressed_tab LIKE sy-ucomm VALUE c_tab1-tab1,
+      END OF g_tab1.
+
+
+*&SPWIZARD: OUTPUT MODULE FOR TS 'TAB1'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: SETS ACTIVE TAB
+MODULE tab1_active_tab_set OUTPUT.
+
+  tab1-activetab = g_tab1-pressed_tab.
+
+  CASE g_tab1-pressed_tab.
+    WHEN c_tab1-tab1.
+      g_tab1-subscreen = '0501'.
+    WHEN c_tab1-tab2.
+      g_tab1-subscreen = '0502'.
+    WHEN c_tab1-tab3.
+      g_tab1-subscreen = '0503'.
+    WHEN c_tab1-tab4.
+      g_tab1-subscreen = '0504'.
+    WHEN c_tab1-tab5.
+      g_tab1-subscreen = '0505'.
+    WHEN OTHERS.
+*&SPWIZARD:      DO NOTHING
+  ENDCASE.
+
+ENDMODULE.
+
+*&SPWIZARD: INPUT MODULE FOR TS 'TAB1'. DO NOT CHANGE THIS LINE!
+*&SPWIZARD: GETS ACTIVE TAB
+MODULE tab1_active_tab_get INPUT.
+  ok_code = sy-ucomm.
+  CASE ok_code.
+    WHEN c_tab1-tab1.
+      g_tab1-pressed_tab = c_tab1-tab1.
+    WHEN c_tab1-tab2.
+      g_tab1-pressed_tab = c_tab1-tab2.
+    WHEN c_tab1-tab3.
+      g_tab1-pressed_tab = c_tab1-tab3.
+    WHEN c_tab1-tab4.
+      g_tab1-pressed_tab = c_tab1-tab4.
+    WHEN c_tab1-tab5.
+      g_tab1-pressed_tab = c_tab1-tab5.
+    WHEN OTHERS.
+*&SPWIZARD:      DO NOTHING
+  ENDCASE.
+ENDMODULE.
